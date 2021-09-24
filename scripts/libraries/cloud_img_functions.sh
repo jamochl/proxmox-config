@@ -1,7 +1,7 @@
 # Common functions for use in setting up cloud images
 
 # From 9000
-fn_first_available_template() {
+fn.first_available_template() {
     local num=9000
 
     set -e
@@ -19,7 +19,7 @@ fn_first_available_template() {
     echo "$num"
 }
 
-fn_download_image() (
+fn.download_image() (
     local IMAGE_URL="$1"
     local DISK_IMAGE="$2"
 
@@ -28,7 +28,7 @@ fn_download_image() (
     wget --tries=30 --no-clobber "${IMAGE_URL}" --output-document "${DISK_IMAGE}"
 )
 
-fn_create_vm() (
+fn.create_vm() (
     local VM_NUM="$1"
     local DISK_IMAGE="$2"
     local VM_NAME="$3"
@@ -48,25 +48,25 @@ fn_create_vm() (
     qm set "${VM_NUM}" --boot c --bootdisk scsi0 --serial0 socket --vga serial0
 )
 
-fn_delete_vm() (
+fn.delete_vm() (
     local VM_NUM="$1"
 
     qm destroy ${VM_NUM} --purge true
 )
 
-fn_main() {
+fn.main() {
     local IMAGE_URL="$1"
     local VM_NUM="$2"
     local DISK_IMAGE="$3"
     local VM_NAME="$4"
 
-    fn_download_image "$IMAGE_URL" "$DISK_IMAGE"
-    fn_create_vm "$VM_NUM" "$DISK_IMAGE" "$VM_NAME"
+    fn.download_image "$IMAGE_URL" "$DISK_IMAGE"
+    fn.create_vm "$VM_NUM" "$DISK_IMAGE" "$VM_NAME"
     if [[ $? -eq 0 ]]; then
         echo "Cloud Image setup successful"
     else
         echo "Something went wrong, Deleting VM $VM_NUM"
-        fn_delete_vm "$VM_NUM"
+        fn.delete_vm "$VM_NUM"
     fi
 }
 
