@@ -1,7 +1,7 @@
 # Common functions for use in setting up cloud images
 
 # From 9000
-fn.first_available_template() {
+cimgsetup::first_available_template() {
     local num=9000
 
     set -e
@@ -19,7 +19,7 @@ fn.first_available_template() {
     echo "$num"
 }
 
-fn.download_image() (
+cimgsetup::download_image() (
     local IMAGE_URL="$1"
     local DISK_IMAGE="$2"
 
@@ -28,7 +28,7 @@ fn.download_image() (
     wget --tries=30 --no-clobber "${IMAGE_URL}" --output-document "${DISK_IMAGE}"
 )
 
-fn.create_vm() (
+cimgsetup::create_vm() (
     local VM_NUM="$1"
     local DISK_IMAGE="$2"
     local VM_NAME="$3"
@@ -48,25 +48,25 @@ fn.create_vm() (
     qm set "${VM_NUM}" --boot c --bootdisk scsi0 --serial0 socket --vga serial0
 )
 
-fn.delete_vm() (
+cimgsetup::delete_vm() (
     local VM_NUM="$1"
 
     qm destroy ${VM_NUM} --purge true
 )
 
-fn.main() {
+cimgsetup::run() {
     local IMAGE_URL="$1"
     local VM_NUM="$2"
     local DISK_IMAGE="$3"
     local VM_NAME="$4"
 
-    fn.download_image "$IMAGE_URL" "$DISK_IMAGE"
-    fn.create_vm "$VM_NUM" "$DISK_IMAGE" "$VM_NAME"
+    cimgsetup::download_image "$IMAGE_URL" "$DISK_IMAGE"
+    cimgsetup::create_vm "$VM_NUM" "$DISK_IMAGE" "$VM_NAME"
     if [[ $? -eq 0 ]]; then
         echo "Cloud Image setup successful"
     else
         echo "Something went wrong, Deleting VM $VM_NUM"
-        fn.delete_vm "$VM_NUM"
+        cimgsetup::delete_vm "$VM_NUM"
     fi
 }
 
