@@ -55,10 +55,10 @@ cimgsetup::delete_vm() (
     qm destroy ${vm_num} --purge true
 )
 
-cimgsetup::check_existing_vm() (
+cimgsetup::check_existing_vms() (
     local cloud_vm_name=$1
     local current_node="$(pvesh get /nodes --output-format json | jq --raw-output '.[0].node')"
-    pvesh get "/nodes/${current_node}/qemu" --output-format json | jq --raw-output ".[] | select(.vmid >= 9000) | select(.name == '${cloud_vm_name}').vmid"
+    pvesh get "/nodes/${current_node}/qemu" --output-format json | jq --raw-output "map(select(.vmid >= 9000) | select(.name == \"${cloud_vm_name}\"))[].vmid"
 )
 
 cimgsetup::run() {
@@ -67,14 +67,16 @@ cimgsetup::run() {
     local DISK_IMAGE="$3"
     local DISK_PATH="/root/cloud_images/$DISK_IMAGE"
     local VM_NAME="$4"
-    local EXISTING_VM="$(cimgsetup::check_existing_vm $VM_NAME)"
+    local EXISTING_VMS=("$(cimgsetup::check_existing_vms $VM_NAME)")
 
     cimgsetup::download_image "$IMAGE_URL" "$DISK_PATH"
     if cimgsetup::create_vm "$VM_NUM" "$DISK_PATH" "$VM_NAME"; then
         echo "Cloud Image setup successful"
-        if [[ -n EXISTING_VM ]]; then
-            cimgsetup::delete_vm "$EXISTING_VM"
-            echo "Deleted existing VM $EXISTING_VM"
+        if [[ -n "${EXISTING_VMS[@]}" ]]; then
+            for EXISTING_VM in ${EXISTING_VMS[@]}; do
+                cimgsetup::delete_vm "$EXISTING_VM"
+                echo "Deleted existing VM $EXISTING_VM"
+            done
         fi
     else
         echo "Something went wrong, Deleting VM $VM_NUM"
