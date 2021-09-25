@@ -20,53 +20,64 @@ cimgsetup::first_available_template() {
 }
 
 cimgsetup::download_image() (
-    local IMAGE_URL="$1"
-    local DISK_IMAGE="$2"
+    local image_url="$1"
+    local disk_path="$2"
 
     set -e 
 
-    wget --tries=30 --no-clobber "${IMAGE_URL}" --output-document "${DISK_IMAGE}"
+    mkdir --parents "$(dirname $2)"
+    wget --tries=30 --no-clobber "${image_url}" --output-document "${disk_path}"
 )
 
 cimgsetup::create_vm() (
-    local VM_NUM="$1"
-    local DISK_IMAGE="$2"
-    local VM_NAME="$3"
+    local vm_num="$1"
+    local disk_path="$2"
+    local vm_name="$3"
 
     set -e
 
     # create a new vm
-    qm create "${VM_NUM}" --memory 2048 --net0 virtio,bridge=vmbr0 -name "${VM_NAME}"
+    qm create "${vm_num}" --memory 2048 --net0 virtio,bridge=vmbr0 -name "${vm_name}"
 
     # import the downloaded disk to local-lvm storage
-    qm importdisk "${VM_NUM}" "${DISK_IMAGE}" local-lvm
+    qm importdisk "${vm_num}" "${disk_path}" local-lvm
 
     # Attach new disk to VM as scsi
-    qm set "${VM_NUM}" --scsihw virtio-scsi-pci --scsi0 "local-lvm:vm-${VM_NUM}-disk-0"
+    qm set "${vm_num}" --scsihw virtio-scsi-pci --scsi0 "local-lvm:vm-${vm_num}-disk-0"
 
     # Set boot drive and display
-    qm set "${VM_NUM}" --boot c --bootdisk scsi0 --serial0 socket --vga serial0
+    qm set "${vm_num}" --boot c --bootdisk scsi0 --serial0 socket --vga serial0
 )
 
 cimgsetup::delete_vm() (
-    local VM_NUM="$1"
+    local vm_num="$1"
 
-    qm destroy ${VM_NUM} --purge true
+    qm destroy ${vm_num} --purge true
+)
+
+cimgsetup::check_existing_vm() (
+    local cloud_vm_name=$1
+    local current_node="$(pvesh get /nodes --output-format json | jq --raw-output '.[0].node')"
+    pvesh get "/nodes/${current_node}/qemu" --output-format json | jq ".[] | select(.vmid >= 9000) | select(.name == '${cloud_vm_name}').vmid"
 )
 
 cimgsetup::run() {
     local IMAGE_URL="$1"
     local VM_NUM="$2"
     local DISK_IMAGE="$3"
+    local DISK_PATH="/root/cloud_images/$DISK_IMAGE"
     local VM_NAME="$4"
+    local EXISTING_VM="$(cimgsetup::check_existing_vm)"
 
-    cimgsetup::download_image "$IMAGE_URL" "$DISK_IMAGE"
-    cimgsetup::create_vm "$VM_NUM" "$DISK_IMAGE" "$VM_NAME"
-    if [[ $? -eq 0 ]]; then
+    cimgsetup::download_image "$IMAGE_URL" "$DISK_PATH"
+    if cimgsetup::create_vm "$VM_NUM" "$DISK_PATH" "$VM_NAME"; then
         echo "Cloud Image setup successful"
+        if [[ -n EXISTING_VM ]]; then
+            cimgsetup::delete_vm "$EXISTING_VM"
+            echo "Deleted existing VM $EXISTING_VM"
+        fi
     else
         echo "Something went wrong, Deleting VM $VM_NUM"
         cimgsetup::delete_vm "$VM_NUM"
     fi
 }
-
