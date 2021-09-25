@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 source libraries/cimgsetup.sh
 
 IMAGE_URL="https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/AlmaLinux-8-GenericCloud-latest.x86_64.qcow2"

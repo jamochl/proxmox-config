@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 source libraries/cimgsetup.sh
 
 IMAGE_URL="https://cloud.debian.org/images/cloud/bullseye/daily/latest/debian-11-generic-amd64-daily.qcow2"

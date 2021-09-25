@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 source libraries/cimgsetup.sh
 
 IMAGE_URL="https://cloud-images.ubuntu.com/releases/focal/release/ubuntu-20.04-server-cloudimg-amd64-disk-kvm.img"

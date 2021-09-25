@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 source libraries/cimgsetup.sh
 
 IMAGE_URL="https://gitlab.archlinux.org/archlinux/arch-boxes/-/jobs/34904/artifacts/raw/output/Arch-Linux-x86_64-cloudimg-20210923.0.qcow2"
